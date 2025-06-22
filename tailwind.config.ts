@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,15 +53,15 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+				// Gaming-themed colors
+				pixel: {
+					blue: '#2563eb',
+					green: '#10b981',
+					gold: '#f59e0b',
+					purple: '#8b5cf6',
+					red: '#ef4444',
+					dark: '#1e293b',
+					light: '#f8fafc'
 				}
 			},
 			borderRadius: {
@@ -84,11 +85,68 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'level-up': {
+					'0%': {
+						transform: 'scale(1)',
+						opacity: '1'
+					},
+					'50%': {
+						transform: 'scale(1.2)',
+						opacity: '0.8'
+					},
+					'100%': {
+						transform: 'scale(1)',
+						opacity: '1'
+					}
+				},
+				'quest-complete': {
+					'0%': {
+						transform: 'translateY(0) scale(1)',
+						opacity: '1'
+					},
+					'50%': {
+						transform: 'translateY(-10px) scale(1.05)',
+						opacity: '0.9'
+					},
+					'100%': {
+						transform: 'translateY(0) scale(1)',
+						opacity: '1'
+					}
+				},
+				'xp-gain': {
+					'0%': {
+						transform: 'translateY(0)',
+						opacity: '0'
+					},
+					'50%': {
+						transform: 'translateY(-20px)',
+						opacity: '1'
+					},
+					'100%': {
+						transform: 'translateY(-40px)',
+						opacity: '0'
+					}
+				},
+				'pixel-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 5px #2563eb'
+					},
+					'50%': {
+						boxShadow: '0 0 20px #2563eb, 0 0 30px #2563eb'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'level-up': 'level-up 0.6s ease-in-out',
+				'quest-complete': 'quest-complete 0.5s ease-in-out',
+				'xp-gain': 'xp-gain 1s ease-out',
+				'pixel-glow': 'pixel-glow 2s ease-in-out infinite'
+			},
+			fontFamily: {
+				'pixel': ['monospace']
 			}
 		}
 	},
