@@ -9,6 +9,8 @@ import PetCompanion from '@/components/PetCompanion';
 import MoodJournal from '@/components/MoodJournal';
 import StreakTracker from '@/components/StreakTracker';
 import { Badge } from '@/components/ui/badge';
+import AccountabilityCompanion from '@/components/AccountabilityCompanion';
+import CompanionSettings from '@/components/CompanionSettings';
 
 interface Quest {
   id: string;
@@ -56,6 +58,8 @@ interface StreakState {
   longestStreak: number;
   lastCompletionDate?: Date;
 }
+
+type CompanionType = 'coach' | 'wizard' | 'cat' | 'robot' | 'teacher';
 
 const Index = () => {
   const [gameState, setGameState] = useState<GameState>({
@@ -161,6 +165,8 @@ const Index = () => {
 
   const [questsCompletedToday, setQuestsCompletedToday] = useState(2);
   const [suggestedQuests, setSuggestedQuests] = useState<string[]>([]);
+  const [selectedCompanion, setSelectedCompanion] = useState<CompanionType>('coach');
+  const [showCompanion, setShowCompanion] = useState(false);
 
   useEffect(() => {
     const totalQuests = quests.length;
@@ -318,6 +324,32 @@ const Index = () => {
   const activeQuests = quests.filter(q => !q.completed);
   const completedQuestsList = quests.filter(q => q.completed);
 
+  // Check for overdue quests and show companion
+  useEffect(() => {
+    const overdueQuests = activeQuests.filter(quest => {
+      // Consider a quest overdue if it's been active for more than 24 hours
+      // This is a simple implementation - you could make it more sophisticated
+      return !quest.completed;
+    });
+
+    if (overdueQuests.length > 0) {
+      setShowCompanion(true);
+    }
+  }, [activeQuests]);
+
+  const handleCompanionDismiss = () => {
+    setShowCompanion(false);
+    // Hide companion for 1 hour
+    setTimeout(() => {
+      const stillOverdue = activeQuests.filter(q => !q.completed).length;
+      if (stillOverdue > 0) {
+        setShowCompanion(true);
+      }
+    }, 3600000); // 1 hour
+  };
+
+  const overdueQuestCount = activeQuests.length;
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -344,6 +376,11 @@ const Index = () => {
         </div>
 
         <MoodJournal onMoodSelect={handleMoodSelect} />
+
+        <CompanionSettings 
+          selectedCompanion={selectedCompanion}
+          onCompanionChange={setSelectedCompanion}
+        />
 
         {suggestedQuests.length > 0 && (
           <div className="bg-card rounded-lg p-4 border-2 border-pixel-green/30">
@@ -435,6 +472,16 @@ const Index = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Accountability Companion */}
+        {showCompanion && overdueQuestCount > 0 && (
+          <AccountabilityCompanion
+            overdueTasks={overdueQuestCount}
+            userName="Champion"
+            onDismiss={handleCompanionDismiss}
+            companionType={selectedCompanion}
+          />
+        )}
       </div>
     </div>
   );
