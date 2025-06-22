@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star, Clock } from 'lucide-react';
 import QuestTimer from '@/components/QuestTimer';
+import QuestCelebration from '@/components/QuestCelebration';
 
 interface Quest {
   id: string;
@@ -23,6 +23,11 @@ interface QuestCardProps {
 
 const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{
+    bonusXP: number;
+    streakBonus: number;
+  }>({ bonusXP: 0, streakBonus: 0 });
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -45,6 +50,11 @@ const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
   const handleComplete = (bonusXP: number = 0) => {
     if (quest.completed) return;
     
+    const streakBonus = Math.floor(Math.random() * 10); // Random streak bonus for demo
+    
+    setCelebrationData({ bonusXP, streakBonus });
+    setShowCelebration(true);
+    
     setIsAnimating(true);
     setTimeout(() => {
       onComplete(quest.id, bonusXP);
@@ -57,78 +67,88 @@ const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
   };
 
   return (
-    <div className={`quest-card ${isAnimating ? 'animate-quest-complete' : ''} ${quest.completed ? 'opacity-60' : ''}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className={`font-bold text-pixel-light mb-2 ${quest.completed ? 'line-through' : ''}`}>
-            {quest.title}
-          </h3>
-          <p className="text-sm text-muted-foreground mb-3">{quest.description}</p>
-          
-          <div className="flex items-center space-x-2 mb-3">
-            <Badge className={getDifficultyColor(quest.difficulty)}>
-              {quest.difficulty.toUpperCase()}
-            </Badge>
-            <Badge variant="outline" className="text-pixel-purple border-pixel-purple">
-              {quest.category}
-            </Badge>
+    <>
+      <div className={`quest-card ${isAnimating ? 'animate-quest-complete' : ''} ${quest.completed ? 'opacity-60' : ''}`}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h3 className={`font-bold text-pixel-light mb-2 ${quest.completed ? 'line-through' : ''}`}>
+              {quest.title}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">{quest.description}</p>
+            
+            <div className="flex items-center space-x-2 mb-3">
+              <Badge className={getDifficultyColor(quest.difficulty)}>
+                {quest.difficulty.toUpperCase()}
+              </Badge>
+              <Badge variant="outline" className="text-pixel-purple border-pixel-purple">
+                {quest.category}
+              </Badge>
+            </div>
           </div>
         </div>
-      </div>
 
-      {!quest.completed && (
-        <div className="mb-4">
-          <QuestTimer 
-            questId={quest.id}
-            estimatedMinutes={getEstimatedMinutes(quest.difficulty)}
-            onComplete={handleTimerComplete}
+        {!quest.completed && (
+          <div className="mb-4">
+            <QuestTimer 
+              questId={quest.id}
+              estimatedMinutes={getEstimatedMinutes(quest.difficulty)}
+              onComplete={handleTimerComplete}
+              disabled={quest.completed}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4 text-sm">
+            <div className="flex items-center space-x-1">
+              <Star className="w-4 h-4 text-pixel-gold" />
+              <span className="text-pixel-gold">{quest.xpReward} XP</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="text-pixel-gold">💰</span>
+              <span className="text-pixel-gold">{quest.goldReward}</span>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => handleComplete()}
             disabled={quest.completed}
-          />
+            variant={quest.completed ? "secondary" : "default"}
+            size="sm"
+            className={`${quest.completed 
+              ? 'bg-pixel-green text-pixel-dark' 
+              : 'bg-pixel-blue hover:bg-pixel-blue/80'
+            } transition-all duration-300`}
+          >
+            {quest.completed ? (
+              <>
+                <Check className="w-4 h-4 mr-1" />
+                Complete
+              </>
+            ) : (
+              <>
+                <Clock className="w-4 h-4 mr-1" />
+                Do Quest
+              </>
+            )}
+          </Button>
         </div>
-      )}
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4 text-sm">
-          <div className="flex items-center space-x-1">
-            <Star className="w-4 h-4 text-pixel-gold" />
-            <span className="text-pixel-gold">{quest.xpReward} XP</span>
+        {isAnimating && (
+          <div className="absolute top-2 right-2 animate-xp-gain text-pixel-gold font-bold">
+            +{quest.xpReward} XP
           </div>
-          <div className="flex items-center space-x-1">
-            <span className="text-pixel-gold">💰</span>
-            <span className="text-pixel-gold">{quest.goldReward}</span>
-          </div>
-        </div>
-
-        <Button
-          onClick={() => handleComplete()}
-          disabled={quest.completed}
-          variant={quest.completed ? "secondary" : "default"}
-          size="sm"
-          className={`${quest.completed 
-            ? 'bg-pixel-green text-pixel-dark' 
-            : 'bg-pixel-blue hover:bg-pixel-blue/80'
-          } transition-all duration-300`}
-        >
-          {quest.completed ? (
-            <>
-              <Check className="w-4 h-4 mr-1" />
-              Complete
-            </>
-          ) : (
-            <>
-              <Clock className="w-4 h-4 mr-1" />
-              Do Quest
-            </>
-          )}
-        </Button>
+        )}
       </div>
 
-      {isAnimating && (
-        <div className="absolute top-2 right-2 animate-xp-gain text-pixel-gold font-bold">
-          +{quest.xpReward} XP
-        </div>
-      )}
-    </div>
+      <QuestCelebration
+        isOpen={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        quest={quest}
+        bonusXP={celebrationData.bonusXP}
+        streakBonus={celebrationData.streakBonus}
+      />
+    </>
   );
 };
 
