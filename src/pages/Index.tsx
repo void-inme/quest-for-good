@@ -1,10 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GameStats from '@/components/GameStats';
 import QuestCard from '@/components/QuestCard';
 import AchievementBadge from '@/components/AchievementBadge';
 import AddQuestModal from '@/components/AddQuestModal';
+import LifeStats from '@/components/LifeStats';
+import PetCompanion from '@/components/PetCompanion';
+import MoodJournal from '@/components/MoodJournal';
+import StreakTracker from '@/components/StreakTracker';
 import { Badge } from '@/components/ui/badge';
 
 interface Quest {
@@ -34,6 +37,24 @@ interface GameState {
   gold: number;
   totalQuests: number;
   completedQuests: number;
+}
+
+interface LifeStatsState {
+  mind: number;
+  body: number;
+  spirit: number;
+}
+
+interface PetState {
+  happiness: number;
+  level: number;
+  lastFed?: Date;
+}
+
+interface StreakState {
+  currentStreak: number;
+  longestStreak: number;
+  lastCompletionDate?: Date;
 }
 
 const Index = () => {
@@ -120,6 +141,27 @@ const Index = () => {
     }
   ]);
 
+  const [lifeStats, setLifeStats] = useState<LifeStatsState>({
+    mind: 45,
+    body: 60,
+    spirit: 35
+  });
+
+  const [petState, setPetState] = useState<PetState>({
+    happiness: 75,
+    level: 3,
+    lastFed: new Date()
+  });
+
+  const [streakState, setStreakState] = useState<StreakState>({
+    currentStreak: 5,
+    longestStreak: 12,
+    lastCompletionDate: new Date()
+  });
+
+  const [questsCompletedToday, setQuestsCompletedToday] = useState(2);
+  const [suggestedQuests, setSuggestedQuests] = useState<string[]>([]);
+
   useEffect(() => {
     const totalQuests = quests.length;
     const completedQuests = quests.filter(q => q.completed).length;
@@ -140,6 +182,17 @@ const Index = () => {
     return rewards[difficulty as keyof typeof rewards] || rewards.easy;
   };
 
+  const getLifeStatForCategory = (category: string) => {
+    const categoryMap: { [key: string]: keyof LifeStatsState } = {
+      'Learning': 'mind',
+      'Work': 'mind',
+      'Health': 'body',
+      'Personal': 'spirit',
+      'Social': 'spirit'
+    };
+    return categoryMap[category] || 'spirit';
+  };
+
   const addQuest = (questData: {
     title: string;
     description: string;
@@ -158,7 +211,7 @@ const Index = () => {
     setQuests(prev => [...prev, newQuest]);
   };
 
-  const completeQuest = (questId: string) => {
+  const completeQuest = (questId: string, bonusXP: number = 0) => {
     const quest = quests.find(q => q.id === questId);
     if (!quest || quest.completed) return;
 
@@ -167,17 +220,18 @@ const Index = () => {
       q.id === questId ? { ...q, completed: true } : q
     ));
 
+    const totalXP = quest.xpReward + bonusXP;
+
     // Update game state with rewards
     setGameState(prev => {
-      const newXp = prev.xp + quest.xpReward;
+      const newXp = prev.xp + totalXP;
       const newGold = prev.gold + quest.goldReward;
       let newLevel = prev.level;
       let xpToNext = prev.xpToNext;
 
-      // Check for level up
       if (newXp >= prev.xpToNext) {
         newLevel += 1;
-        xpToNext = newLevel * 100; // Increasing XP requirement per level
+        xpToNext = newLevel * 100;
       }
 
       return {
@@ -190,8 +244,41 @@ const Index = () => {
       };
     });
 
-    // Check achievements
+    // Update life stats based on quest category
+    const statToIncrease = getLifeStatForCategory(quest.category);
+    setLifeStats(prev => ({
+      ...prev,
+      [statToIncrease]: Math.min(100, prev[statToIncrease] + (quest.difficulty === 'hard' ? 5 : quest.difficulty === 'medium' ? 3 : 2))
+    }));
+
+    // Update pet happiness
+    setPetState(prev => ({
+      ...prev,
+      happiness: Math.min(100, prev.happiness + 10),
+      lastFed: new Date()
+    }));
+
+    // Update streak
+    const today = new Date();
+    setStreakState(prev => {
+      const newStreak = prev.lastCompletionDate?.toDateString() === today.toDateString() 
+        ? prev.currentStreak 
+        : prev.currentStreak + 1;
+      
+      return {
+        currentStreak: newStreak,
+        longestStreak: Math.max(prev.longestStreak, newStreak),
+        lastCompletionDate: today
+      };
+    });
+
+    setQuestsCompletedToday(prev => prev + 1);
     checkAchievements(quest);
+  };
+
+  const handleMoodSelect = (mood: string, suggestions: string[]) => {
+    setSuggestedQuests(suggestions);
+    console.log(`Mood selected: ${mood}`, suggestions);
   };
 
   const checkAchievements = (completedQuest: Quest) => {
@@ -239,7 +326,37 @@ const Index = () => {
           <p className="text-pixel-gold">Level up your life, one quest at a time</p>
         </header>
 
-        <GameStats {...gameState} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <GameStats {...gameState} />
+          </div>
+          <div>
+            <StreakTracker {...streakState} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <LifeStats {...lifeStats} />
+          <PetCompanion 
+            {...petState} 
+            questsCompletedToday={questsCompletedToday}
+          />
+        </div>
+
+        <MoodJournal onMoodSelect={handleMoodSelect} />
+
+        {suggestedQuests.length > 0 && (
+          <div className="bg-card rounded-lg p-4 border-2 border-pixel-green/30">
+            <h3 className="text-lg font-bold text-pixel-light mb-3">Suggested Quests for Your Mood</h3>
+            <div className="flex flex-wrap gap-2">
+              {suggestedQuests.map((suggestion, index) => (
+                <Badge key={index} className="bg-pixel-green/20 text-pixel-green border-pixel-green">
+                  {suggestion}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Tabs defaultValue="quests" className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-card">

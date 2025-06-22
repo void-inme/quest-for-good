@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Star, Clock } from 'lucide-react';
+import QuestTimer from '@/components/QuestTimer';
 
 interface Quest {
   id: string;
@@ -17,7 +18,7 @@ interface Quest {
 
 interface QuestCardProps {
   quest: Quest;
-  onComplete: (questId: string) => void;
+  onComplete: (questId: string, bonusXP?: number) => void;
 }
 
 const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
@@ -32,14 +33,27 @@ const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
     }
   };
 
-  const handleComplete = () => {
+  const getEstimatedMinutes = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return 15;
+      case 'medium': return 30;
+      case 'hard': return 60;
+      default: return 25;
+    }
+  };
+
+  const handleComplete = (bonusXP: number = 0) => {
     if (quest.completed) return;
     
     setIsAnimating(true);
     setTimeout(() => {
-      onComplete(quest.id);
+      onComplete(quest.id, bonusXP);
       setIsAnimating(false);
     }, 500);
+  };
+
+  const handleTimerComplete = (questId: string, bonusXP: number) => {
+    handleComplete(bonusXP);
   };
 
   return (
@@ -62,6 +76,17 @@ const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
         </div>
       </div>
 
+      {!quest.completed && (
+        <div className="mb-4">
+          <QuestTimer 
+            questId={quest.id}
+            estimatedMinutes={getEstimatedMinutes(quest.difficulty)}
+            onComplete={handleTimerComplete}
+            disabled={quest.completed}
+          />
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4 text-sm">
           <div className="flex items-center space-x-1">
@@ -75,7 +100,7 @@ const QuestCard: React.FC<QuestCardProps> = ({ quest, onComplete }) => {
         </div>
 
         <Button
-          onClick={handleComplete}
+          onClick={() => handleComplete()}
           disabled={quest.completed}
           variant={quest.completed ? "secondary" : "default"}
           size="sm"
